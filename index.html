@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debt vs Equity — Financial Management Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --debt: #E8B84B; --equity: #5B8EF0; --bg: #0D0D0D; --surface: #161616;
+    --surface2: #1E1E1E; --border: #2A2A2A; --text: #F0EDE6; --muted: #666;
+    --green: #4CAF7D; --red: #E05656; --gold: #FFD700; --silver: #C0C0C0; --bronze: #CD7F32;
+    --font-head: 'Bebas Neue', sans-serif; --font-mono: 'IBM Plex Mono', monospace; --font-body: 'IBM Plex Sans', sans-serif;
+  }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+
+  .ticker { background: var(--surface2); border-bottom: 1px solid var(--border); overflow: hidden; height: 32px; display: flex; align-items: center; }
+  .ticker-inner { display: flex; gap: 48px; animation: ticker 18s linear infinite; white-space: nowrap; }
+  .ticker-item { font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; gap: 8px; }
+  .ticker-item span { color: var(--debt); }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  header { padding: 20px 32px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .logo { font-family: var(--font-head); font-size: 34px; letter-spacing: 2px; line-height: 1; }
+  .logo span { color: var(--debt); } .logo em { color: var(--equity); font-style: normal; }
+  .subtitle { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .score-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 8px 16px; text-align: center; }
+  .score-pill .val { font-family: var(--font-head); font-size: 26px; }
+  .score-pill .lbl { font-family: var(--font-mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  #score-val { color: var(--green); } #lives-val { color: var(--red); }
+  .lb-nav-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 18px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+  .lb-nav-btn:hover, .lb-nav-btn.active-tab { border-color: var(--equity); color: var(--equity); }
+
+  main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  /* NAME SCREEN */
+  #name-screen { display: flex; flex-direction: column; align-items: center; min-height: 60vh; text-align: center; padding-top: 40px; }
+  .name-logo { font-family: var(--font-head); font-size: 64px; letter-spacing: 4px; line-height: 1; margin-bottom: 6px; }
+  .name-logo span { color: var(--debt); } .name-logo em { color: var(--equity); font-style: normal; }
+  .name-tagline { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 44px; }
+  .name-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 36px 40px; width: 100%; max-width: 420px; position: relative; overflow: hidden; }
+  .name-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--debt), var(--equity)); }
+  .name-card-title { font-family: var(--font-head); font-size: 22px; letter-spacing: 1px; margin-bottom: 4px; }
+  .name-card-sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 22px; }
+  .name-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 13px 16px; font-family: var(--font-body); font-size: 15px; color: var(--text); outline: none; transition: border-color 0.2s; margin-bottom: 6px; }
+  .name-input:focus { border-color: var(--equity); }
+  .name-input::placeholder { color: var(--muted); }
+  .name-error { font-family: var(--font-mono); font-size: 10px; color: var(--red); margin-bottom: 14px; display: none; text-align: left; }
+  .start-btn { width: 100%; background: var(--text); color: var(--bg); border: none; border-radius: 6px; padding: 14px; font-family: var(--font-head); font-size: 20px; letter-spacing: 2px; cursor: pointer; transition: opacity 0.2s; }
+  .start-btn:hover { opacity: 0.85; }
+  .name-lb-preview { margin-top: 32px; width: 100%; max-width: 420px; }
+  .preview-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: left; }
+  .preview-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; margin-bottom: 5px; font-size: 13px; }
+  .preview-rank { font-family: var(--font-mono); font-size: 12px; width: 28px; }
+  .preview-name { flex: 1; padding: 0 12px; color: #C8C4BC; text-align: left; }
+  .preview-score { font-family: var(--font-mono); font-size: 12px; color: var(--debt); }
+
+  /* GAME SCREEN */
+  .scenario-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .round-badge { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 28px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--debt), var(--equity)); border-radius: 2px; transition: width 0.6s ease; }
+  .scenario-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px; margin-bottom: 28px; position: relative; overflow: hidden; }
+  .scenario-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--debt), var(--equity)); }
+  .company-name { font-family: var(--font-head); font-size: 22px; letter-spacing: 1px; margin-bottom: 4px; }
+  .scenario-type { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  .scenario-text { font-size: 14px; line-height: 1.8; color: #C8C4BC; margin-bottom: 20px; }
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; }
+  .stat-box .stat-val { font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
+  .stat-box .stat-key { font-family: var(--font-mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .question-text { font-size: 16px; font-weight: 500; margin-bottom: 20px; line-height: 1.5; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .choice-btn { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s ease; text-align: left; }
+  .choice-btn:hover { transform: translateY(-1px); }
+  .choice-btn.debt-btn:hover { border-color: var(--debt); background: rgba(232,184,75,0.06); }
+  .choice-btn.equity-btn:hover { border-color: var(--equity); background: rgba(91,142,240,0.06); }
+  .choice-btn.correct { border-color: var(--green) !important; background: rgba(76,175,125,0.1) !important; }
+  .choice-btn.wrong { border-color: var(--red) !important; background: rgba(224,86,86,0.1) !important; }
+  .choice-btn.reveal-correct { border-color: var(--green) !important; background: rgba(76,175,125,0.1) !important; }
+  .choice-btn:disabled { cursor: default; transform: none; }
+  .choice-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+  .choice-title { font-family: var(--font-head); font-size: 20px; letter-spacing: 1px; margin-bottom: 6px; }
+  .debt-btn .choice-title { color: var(--debt); } .equity-btn .choice-title { color: var(--equity); }
+  .choice-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .feedback-box { border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; display: none; border-left: 4px solid; }
+  .feedback-box.correct { background: rgba(76,175,125,0.08); border-color: var(--green); }
+  .feedback-box.wrong { background: rgba(224,86,86,0.08); border-color: var(--red); }
+  .feedback-verdict { font-family: var(--font-head); font-size: 20px; letter-spacing: 1px; margin-bottom: 8px; }
+  .feedback-box.correct .feedback-verdict { color: var(--green); } .feedback-box.wrong .feedback-verdict { color: var(--red); }
+  .feedback-explain { font-size: 13px; line-height: 1.8; color: #C8C4BC; }
+  .concept-tag { display: inline-block; font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; margin: 10px 6px 0 0; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .next-btn { display: none; width: 100%; background: var(--text); color: var(--bg); border: none; border-radius: 6px; padding: 14px; font-family: var(--font-head); font-size: 18px; letter-spacing: 2px; cursor: pointer; transition: opacity 0.2s; }
+  .next-btn:hover { opacity: 0.85; }
+  .concept-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .concept-chip { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border-radius: 3px; border: 1px solid var(--border); color: var(--muted); background: var(--surface2); }
+
+  /* RESULT SCREEN */
+  #result-screen { display: none; text-align: center; padding: 40px 20px; }
+  .result-grade { font-family: var(--font-head); font-size: 96px; letter-spacing: 4px; line-height: 1; margin-bottom: 8px; }
+  .result-title { font-family: var(--font-head); font-size: 28px; letter-spacing: 2px; color: var(--muted); margin-bottom: 24px; }
+  .result-score-big { font-family: var(--font-mono); font-size: 48px; font-weight: 500; margin-bottom: 4px; }
+  .result-subtitle { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+  .result-rank-banner { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px 24px; max-width: 540px; margin: 0 auto 20px; display: flex; align-items: center; gap: 16px; }
+  .rank-medal-big { font-size: 38px; }
+  .rank-pos { font-family: var(--font-head); font-size: 22px; letter-spacing: 1px; color: var(--debt); }
+  .rank-sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+  .result-breakdown { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; text-align: left; margin-bottom: 20px; max-width: 540px; margin-left: auto; margin-right: auto; }
+  .breakdown-title { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 16px; }
+  .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-q { color: #C8C4BC; }
+  .breakdown-a { font-family: var(--font-mono); font-size: 11px; }
+  .breakdown-a.ok { color: var(--green); } .breakdown-a.bad { color: var(--red); }
+  .result-btns { display: flex; gap: 12px; max-width: 540px; margin: 0 auto; }
+  .restart-btn { flex: 1; background: var(--text); color: var(--bg); border: none; border-radius: 6px; padding: 14px; font-family: var(--font-head); font-size: 18px; letter-spacing: 2px; cursor: pointer; transition: opacity 0.2s; }
+  .restart-btn:hover { opacity: 0.85; }
+  .lb-btn { flex: 1; background: transparent; color: var(--equity); border: 1.5px solid var(--equity); border-radius: 6px; padding: 14px; font-family: var(--font-head); font-size: 18px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; }
+  .lb-btn:hover { background: rgba(91,142,240,0.1); }
+
+  /* LEADERBOARD SCREEN */
+  #lb-screen { display: none; padding-bottom: 40px; }
+  .lb-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  .lb-big-title { font-family: var(--font-head); font-size: 44px; letter-spacing: 3px; line-height: 1; }
+  .lb-big-title span { color: var(--equity); }
+  .lb-big-sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+  .lb-clear-btn { font-family: var(--font-mono); font-size: 10px; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 7px 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; align-self: flex-start; margin-top: 8px; }
+  .lb-clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* PODIUM */
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 14px; margin-bottom: 40px; }
+  .podium-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .podium-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 16px; }
+  .podium-pname { font-family: var(--font-mono); font-size: 11px; color: var(--text); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+  .podium-pts { font-family: var(--font-head); font-size: 14px; color: var(--muted); }
+  .podium-block { width: 88px; display: flex; align-items: center; justify-content: center; border-radius: 6px 6px 0 0; font-size: 26px; }
+  .p1-block { height: 110px; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); }
+  .p2-block { height: 80px; background: rgba(192,192,192,0.08); border: 1px solid rgba(192,192,192,0.25); }
+  .p3-block { height: 58px; background: rgba(205,127,50,0.08); border: 1px solid rgba(205,127,50,0.25); }
+  .podium-slot.empty .podium-pname { color: var(--muted); font-style: italic; }
+
+  /* TABLE */
+  .lb-table { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .lb-thead { display: grid; grid-template-columns: 60px 1fr 90px 88px 80px; padding: 10px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .lb-th { font-family: var(--font-mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .lb-th.r { text-align: right; }
+  .lb-row { display: grid; grid-template-columns: 60px 1fr 90px 88px 80px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.15s; }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: rgba(255,255,255,0.025); }
+  .lb-row.you { background: rgba(91,142,240,0.07); border-left: 3px solid var(--equity); padding-left: 17px; }
+  .lb-rank-cell { font-family: var(--font-head); font-size: 22px; }
+  .lb-rank-cell.gold { color: var(--gold); } .lb-rank-cell.silver { color: var(--silver); } .lb-rank-cell.bronze { color: var(--bronze); }
+  .lb-rank-cell.plain { color: var(--muted); font-size: 16px; }
+  .lb-player-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .lb-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 13px; flex-shrink: 0; }
+  .lb-pname-text { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .you-tag { font-family: var(--font-mono); font-size: 9px; color: var(--equity); background: rgba(91,142,240,0.14); border: 1px solid rgba(91,142,240,0.3); border-radius: 3px; padding: 2px 6px; margin-left: 6px; flex-shrink: 0; }
+  .lb-grade-cell { font-family: var(--font-head); font-size: 18px; }
+  .lb-pts-cell { font-family: var(--font-mono); font-size: 13px; color: var(--debt); text-align: right; }
+  .lb-acc-cell { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: right; }
+  .lb-empty-row { padding: 52px 20px; text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .lb-play-btn { display: block; margin: 24px auto 0; background: var(--text); color: var(--bg); border: none; border-radius: 6px; padding: 13px 44px; font-family: var(--font-head); font-size: 18px; letter-spacing: 2px; cursor: pointer; transition: opacity 0.2s; }
+  .lb-play-btn:hover { opacity: 0.85; }
+
+  @media (max-width: 600px) {
+    .choices { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    header { flex-wrap: wrap; }
+    .lb-thead, .lb-row { grid-template-columns: 44px 1fr 60px 60px; }
+    .lb-th:last-child, .lb-row > :last-child { display: none; }
+    .podium-block { width: 72px; }
+    .result-btns { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker">
+  <div class="ticker-inner">
+    <div class="ticker-item">INTEREST COVERAGE RATIO <span>▲ DEBT</span></div>
+    <div class="ticker-item">DILUTION OF OWNERSHIP <span>▲ EQUITY</span></div>
+    <div class="ticker-item">TAX SHIELD ON INTEREST <span>▲ DEBT</span></div>
+    <div class="ticker-item">NO REPAYMENT OBLIGATION <span>▲ EQUITY</span></div>
+    <div class="ticker-item">FINANCIAL LEVERAGE <span>▲ DEBT</span></div>
+    <div class="ticker-item">RETAINED EARNINGS <span>▲ EQUITY</span></div>
+    <div class="ticker-item">TRADING ON EQUITY <span>▲ DEBT</span></div>
+    <div class="ticker-item">COST OF CAPITAL <span>▲ BOTH</span></div>
+    <div class="ticker-item">INTEREST COVERAGE RATIO <span>▲ DEBT</span></div>
+    <div class="ticker-item">DILUTION OF OWNERSHIP <span>▲ EQUITY</span></div>
+    <div class="ticker-item">TAX SHIELD ON INTEREST <span>▲ DEBT</span></div>
+    <div class="ticker-item">NO REPAYMENT OBLIGATION <span>▲ EQUITY</span></div>
+    <div class="ticker-item">FINANCIAL LEVERAGE <span>▲ DEBT</span></div>
+    <div class="ticker-item">RETAINED EARNINGS <span>▲ EQUITY</span></div>
+    <div class="ticker-item">TRADING ON EQUITY <span>▲ DEBT</span></div>
+    <div class="ticker-item">COST OF CAPITAL <span>▲ BOTH</span></div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <div class="logo"><span>DEBT</span> vs <em>EQUITY</em></div>
+    <div class="subtitle">Class XII · Financial Management · Capital Structure</div>
+  </div>
+  <div class="header-right">
+    <div class="score-pill" id="score-pill" style="display:none">
+      <div class="val" id="score-val">0</div>
+      <div class="lbl">Score</div>
+    </div>
+    <div class="score-pill" id="lives-pill" style="display:none">
+      <div class="val" id="lives-val">♥ ♥ ♥</div>
+      <div class="lbl">Lives</div>
+    </div>
+    <button class="lb-nav-btn" id="lb-nav-btn" onclick="toggleLeaderboard()">🏆 Leaderboard</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- NAME ENTRY -->
+  <div id="name-screen">
+    <div class="name-logo"><span>DEBT</span> vs <em>EQUITY</em></div>
+    <div class="name-tagline">Class XII · Financial Management · Capital Structure</div>
+    <div class="name-card">
+      <div class="name-card-title">Enter the Arena</div>
+      <div class="name-card-sub">Your name appears on the leaderboard</div>
+      <input class="name-input" id="player-name-input" type="text" placeholder="Your name..." maxlength="24"
+        onkeydown="if(event.key==='Enter') startGame()" />
+      <div class="name-error" id="name-error">Please enter your name to continue.</div>
+      <button class="start-btn" onclick="startGame()">START GAME</button>
+    </div>
+    <div class="name-lb-preview" id="lb-preview"></div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" style="display:none">
+    <div class="scenario-header">
+      <div class="round-badge" id="round-badge">Round 1 of 8</div>
+      <div class="round-badge" id="streak-badge"></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="scenario-card">
+      <div class="company-name" id="company-name">—</div>
+      <div class="scenario-type" id="scenario-type">—</div>
+      <div class="scenario-text" id="scenario-text">—</div>
+      <div class="stats-row" id="stats-row"></div>
+    </div>
+    <div class="question-text" id="question-text">—</div>
+    <div class="choices">
+      <button class="choice-btn debt-btn" id="btn-debt" onclick="choose('debt')">
+        <span class="choice-icon">🏦</span>
+        <div class="choice-title">DEBT</div>
+        <div class="choice-desc">Borrow via loans, debentures, or bonds. Pay fixed interest. Retain ownership.</div>
+      </button>
+      <button class="choice-btn equity-btn" id="btn-equity" onclick="choose('equity')">
+        <span class="choice-icon">📈</span>
+        <div class="choice-title">EQUITY</div>
+        <div class="choice-desc">Issue shares. No fixed obligation. Shareholders share in profits and control.</div>
+      </button>
+    </div>
+    <div class="feedback-box" id="feedback-box">
+      <div class="feedback-verdict" id="feedback-verdict">—</div>
+      <div class="feedback-explain" id="feedback-explain">—</div>
+      <div id="concept-tags"></div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">NEXT SCENARIO →</button>
+    <div class="concept-strip">
+      <div class="concept-chip">Trading on Equity</div>
+      <div class="concept-chip">Financial Leverage</div>
+      <div class="concept-chip">Tax Shield</div>
+      <div class="concept-chip">Dilution of Control</div>
+      <div class="concept-chip">Interest Coverage</div>
+      <div class="concept-chip">Capital Structure</div>
+      <div class="concept-chip">Cost of Debt vs Equity</div>
+      <div class="concept-chip">Risk &amp; Return</div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="result-screen">
+    <div class="result-grade" id="result-grade">—</div>
+    <div class="result-title" id="result-title">—</div>
+    <div class="result-score-big" id="result-score-big">—</div>
+    <div class="result-subtitle" id="result-subtitle">—</div>
+    <div class="result-rank-banner" id="result-rank-banner"></div>
+    <div class="result-breakdown" id="result-breakdown"></div>
+    <div class="result-btns">
+      <button class="lb-btn" onclick="goToLeaderboard()">VIEW LEADERBOARD</button>
+      <button class="restart-btn" onclick="restartGame()">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD SCREEN -->
+  <div id="lb-screen">
+    <div class="lb-header-row">
+      <div>
+        <div class="lb-big-title">LEADER<span>BOARD</span></div>
+        <div class="lb-big-sub">Top performers · Class XII Financial Management</div>
+      </div>
+      <button class="lb-clear-btn" onclick="confirmClear()">Reset all scores</button>
+    </div>
+    <div class="podium" id="podium"></div>
+    <div class="lb-table">
+      <div class="lb-thead">
+        <div class="lb-th">Rank</div>
+        <div class="lb-th">Player</div>
+        <div class="lb-th">Grade</div>
+        <div class="lb-th r">Score</div>
+        <div class="lb-th r">Accuracy</div>
+      </div>
+      <div id="lb-tbody"></div>
+    </div>
+    <button class="lb-play-btn" onclick="goToNameScreen()">PLAY NOW</button>
+  </div>
+
+</main>
+
+<script>
+const STORAGE_KEY = 'dve_lb_v3';
+
+const SEED = [
+  { name:'Ananya Sharma', score:95, correct:8, total:8, grade:'A+', pct:100, ts:Date.now()-864e5*5 },
+  { name:'Rohan Mehta',   score:85, correct:7, total:8, grade:'A',  pct:88,  ts:Date.now()-864e5*4 },
+  { name:'Priya Kapoor',  score:80, correct:7, total:8, grade:'A',  pct:88,  ts:Date.now()-864e5*3 },
+  { name:'Arjun Nair',    score:65, correct:6, total:8, grade:'B',  pct:75,  ts:Date.now()-864e5*2 },
+  { name:'Simran Bedi',   score:50, correct:5, total:8, grade:'B',  pct:63,  ts:Date.now()-864e5*1 },
+];
+
+const COLORS = [
+  ['rgba(232,184,75,.18)','#E8B84B'], ['rgba(91,142,240,.18)','#5B8EF0'],
+  ['rgba(76,175,125,.18)','#4CAF7D'], ['rgba(224,86,86,.18)','#E05656'],
+  ['rgba(180,120,240,.18)','#B478F0'],['rgba(240,160,80,.18)','#F0A050'],
+];
+
+function loadLB() {
+  try { const d = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (Array.isArray(d) && d.length) return d; } catch(e){}
+  const s = SEED.slice(); localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); return s;
+}
+function saveLB(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){} }
+
+function av(name) { let h=0; for (const c of name) h=(h*31+c.charCodeAt(0))%COLORS.length; return COLORS[Math.abs(h)]; }
+function initials(n) { return n.split(' ').map(w=>w[0]||'').slice(0,2).join('').toUpperCase()||'?'; }
+function medal(r) { return r===1?'🥇':r===2?'🥈':r===3?'🥉':''; }
+function gColor(g) { return g==='A+'?'#4CAF7D':g==='A'?'#5B8EF0':g==='B'?'#E8B84B':'#E05656'; }
+function rankCls(r) { return r===1?'gold':r===2?'silver':r===3?'bronze':'plain'; }
+
+// ── SCREENS ──
+let activeScreen = 'name-screen', prevScreen = 'name-screen', playerName = '';
+
+function showScreen(id) {
+  ['name-screen','game-screen','result-screen','lb-screen'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  document.getElementById(id).style.display = id==='name-screen' ? 'flex' : 'block';
+  activeScreen = id;
+  document.getElementById('lb-nav-btn').classList.toggle('active-tab', id==='lb-screen');
+  const inGame = id==='game-screen';
+  document.getElementById('score-pill').style.display = inGame?'block':'none';
+  document.getElementById('lives-pill').style.display = inGame?'block':'none';
+}
+
+function toggleLeaderboard() {
+  if (activeScreen==='lb-screen') { showScreen(prevScreen||'name-screen'); }
+  else { prevScreen=activeScreen; renderLeaderboard(); showScreen('lb-screen'); }
+}
+function goToLeaderboard() { prevScreen='result-screen'; renderLeaderboard(); showScreen('lb-screen'); }
+function goToNameScreen() { renderPreview(); showScreen('name-screen'); }
+function confirmClear() {
+  if (confirm('Reset all scores? Demo data will be restored.')) {
+    localStorage.removeItem(STORAGE_KEY); renderLeaderboard();
+  }
+}
+
+// ── LEADERBOARD RENDER ──
+function renderLeaderboard() {
+  const data = loadLB().sort((a,b)=>b.score-a.score||b.pct-a.pct);
+
+  // PODIUM: order = 2nd, 1st, 3rd
+  const order = [data[1], data[0], data[2]];
+  const blkClass = ['p2-block','p1-block','p3-block'];
+  const blkH = ['80px','110px','58px'];
+
+  document.getElementById('podium').innerHTML = order.map((p,i) => {
+    const rank = [2,1,3][i];
+    if (!p) return `<div class="podium-slot empty"><div class="podium-pname" style="color:var(--muted)">—</div><div class="podium-block ${blkClass[i]}" style="height:${blkH[i]}">—</div></div>`;
+    const [bg,fg] = av(p.name);
+    return `<div class="podium-slot">
+      <div class="podium-avatar" style="background:${bg};color:${fg}">${initials(p.name)}</div>
+      <div class="podium-pname">${p.name}</div>
+      <div class="podium-pts">${p.score}pts</div>
+      <div class="podium-block ${blkClass[i]}" style="height:${blkH[i]}">${medal(rank)}</div>
+    </div>`;
+  }).join('');
+
+  const tbody = document.getElementById('lb-tbody');
+  if (!data.length) { tbody.innerHTML=`<div class="lb-empty-row">No scores yet — be the first to play!</div>`; return; }
+
+  tbody.innerHTML = data.map((p,i) => {
+    const rank = i+1;
+    const isYou = p.name.toLowerCase()===playerName.toLowerCase() && p._latest;
+    const [bg,fg] = av(p.name);
+    return `<div class="lb-row${isYou?' you':''}">
+      <div class="lb-rank-cell ${rankCls(rank)}">${medal(rank)||'#'+rank}</div>
+      <div class="lb-player-cell">
+        <div class="lb-av" style="background:${bg};color:${fg}">${initials(p.name)}</div>
+        <span class="lb-pname-text">${p.name}</span>
+        ${isYou?'<span class="you-tag">YOU</span>':''}
+      </div>
+      <div class="lb-grade-cell" style="color:${gColor(p.grade)}">${p.grade}</div>
+      <div class="lb-pts-cell">${p.score}</div>
+      <div class="lb-acc-cell">${Math.round(p.pct)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPreview() {
+  const top = loadLB().sort((a,b)=>b.score-a.score).slice(0,3);
+  const el = document.getElementById('lb-preview');
+  if (!top.length) { el.innerHTML=''; return; }
+  el.innerHTML = `<div class="preview-label">Current top performers</div>` +
+    top.map((p,i)=>`<div class="preview-row">
+      <span class="preview-rank">${medal(i+1)||'#'+(i+1)}</span>
+      <span class="preview-name">${p.name}</span>
+      <span class="preview-score">${p.score}pts</span>
+    </div>`).join('');
+}
+
+// ── GAME LOGIC ──
+const scenarios = [
+  { company:"Starlight Textiles Ltd.", type:"Established Manufacturing Company",
+    text:"Starlight Textiles has been profitable for 12 consecutive years with stable revenues of ₹80 crore. They need ₹15 crore to expand their Surat plant. They have low existing debt and a strong credit rating. The promoters are unwilling to dilute their 72% stake.",
+    stats:[{val:"₹80Cr",key:"Annual Revenue"},{val:"18%",key:"Net Profit Margin"},{val:"0.3x",key:"Debt/Equity Ratio"},{val:"AAA",key:"Credit Rating"}],
+    question:"What is the BEST source of long-term finance for Starlight Textiles' expansion?", answer:"debt",
+    explanation:"This is a textbook case for debt financing. Stable earnings (18% margin) easily cover interest. Existing D/E is very low (0.3x), leaving ample borrowing headroom. Promoters want to retain control, so equity is ruled out. The tax shield on interest makes debt even cheaper — a classic case of Trading on Equity.",
+    concepts:["Trading on Equity","Financial Leverage","Tax Shield on Interest","Capital Structure"] },
+  { company:"NovaMed BioTech", type:"Early-Stage Startup",
+    text:"NovaMed is a 2-year-old biotech startup developing cancer diagnostic kits. They have no revenue yet and are burning ₹40 lakh per month in R&D. They have no assets to offer as collateral. The founders have a breakthrough patent but need ₹20 crore for Phase-2 trials.",
+    stats:[{val:"₹0",key:"Annual Revenue"},{val:"-₹40L/mo",key:"Cash Burn"},{val:"None",key:"Collateral"},{val:"High",key:"Business Risk"}],
+    question:"Which financing option is suitable for NovaMed's Phase-2 trials?", answer:"equity",
+    explanation:"NovaMed cannot take on debt — no revenue to pay interest, no collateral for a loan, and banks won't lend to pre-revenue startups. Equity (VC or angel) is the only viable route. Investors accept high risk for potential high returns, and there's no fixed repayment pressure during the R&D phase.",
+    concepts:["Risk-Return Trade-off","No Fixed Obligation","Collateral Requirements","Venture Capital"] },
+  { company:"Himalaya Infrastructure Pvt. Ltd.", type:"Government-Backed Infrastructure Firm",
+    text:"Himalaya Infrastructure is building a ₹500 crore highway under a 30-year government concession. Revenue will come from stable toll collection from Year 3. They have mortgageable assets worth ₹350 crore. Cash flows are predictable and contractual.",
+    stats:[{val:"₹500Cr",key:"Project Size"},{val:"Stable",key:"Future Cash Flows"},{val:"₹350Cr",key:"Asset Value"},{val:"30 yrs",key:"Concession Period"}],
+    question:"For long-term project financing, which is more appropriate?", answer:"debt",
+    explanation:"Infrastructure projects with predictable, contractual cash flows are ideal for debt. The ₹350Cr asset base provides strong collateral. The government concession reduces business risk. Debt here provides a tax shield and lets promoters retain full control over 30 years of toll revenue.",
+    concepts:["Project Finance","Asset-backed Lending","Tax Shield","Long-term Debt"] },
+  { company:"QuickKart E-commerce", type:"Loss-Making Hyper-Growth Startup",
+    text:"QuickKart is a Q-commerce startup growing 200% YoY but making losses due to heavy discounting. Banks have rejected their loan application. They are considering a Series B funding round.",
+    stats:[{val:"200%",key:"YoY Growth"},{val:"-₹120Cr",key:"Net Loss"},{val:"Rejected",key:"Bank Loan Status"},{val:"50 cities",key:"Expansion Target"}],
+    question:"How should QuickKart finance its aggressive expansion?", answer:"equity",
+    explanation:"QuickKart is loss-making — it cannot service debt. Banks have said no. Equity (Series B VC) is the only path. Growth-stage investors accept losses today for massive future returns. No mandatory repayment matches the negative cash flow reality of a hyper-growth startup.",
+    concepts:["Growth Stage Financing","No Repayment Obligation","Venture Capital","Cost of Financial Distress"] },
+  { company:"Sunrise Steel Ltd.", type:"Cyclical Industry — Peak Phase",
+    text:"Sunrise Steel earned ₹200 crore in net profit this boom year and wants to build a new blast furnace costing ₹150 crore. However, the steel sector is highly cyclical — profits can crash 80% in a downturn. Existing debt is ₹400 crore (D/E: 4.2x).",
+    stats:[{val:"₹200Cr",key:"Current Net Profit"},{val:"₹400Cr",key:"Existing Debt"},{val:"High",key:"Industry Cyclicality"},{val:"4.2x",key:"Debt/Equity Ratio"}],
+    question:"Given cyclicality and high existing debt, how should Sunrise fund the new furnace?", answer:"equity",
+    explanation:"D/E of 4.2x is dangerously high. More debt in a cyclical industry risks financial distress or bankruptcy during a downturn — profits collapse but interest must still be paid. Equity is safer: no mandatory interest. Firms in volatile industries should deliberately maintain lower financial leverage.",
+    concepts:["Financial Risk","Cyclical Industry","Interest Coverage Ratio","Capital Structure Optimisation"] },
+  { company:"Prestige Developers Ltd.", type:"Real Estate Company — IPO Candidate",
+    text:"Prestige Developers has completed ₹3000 crore worth of projects over 15 years. They want to raise ₹500 crore for land banks. Current D/E is 2.1x. SEBI has approved their DRHP. The promoter holds 80% stake.",
+    stats:[{val:"₹3000Cr",key:"Projects Delivered"},{val:"₹500Cr",key:"Capital Needed"},{val:"2.1x",key:"Current D/E Ratio"},{val:"80%",key:"Promoter Stake"}],
+    question:"Prestige should raise ₹500 crore through which route?", answer:"equity",
+    explanation:"Adding ₹500Cr debt to a 2.1x D/E would push leverage to dangerous levels. An IPO is ideal — the company is mature, profitable, and SEBI-approved. Large capital without adding debt. The promoter's 80% stake has room to dilute, and listing brings better credit ratings for cheaper future debt too.",
+    concepts:["IPO","Debt Capacity","Optimal Capital Structure","Financial Risk"] },
+  { company:"Vidyalaya EdTech Pvt. Ltd.", type:"Profitable EdTech — Expansion Phase",
+    text:"Vidyalaya EdTech has been EBITDA-positive for 3 years. They want to acquire a smaller competitor for ₹30 crore. They have ₹15 crore in retained earnings and need ₹15 crore more. Promoters consider control sacred. Tax rate is 30%.",
+    stats:[{val:"₹15Cr",key:"Retained Earnings"},{val:"₹15Cr",key:"Additional Need"},{val:"EBITDA+",key:"Profitability"},{val:"30%",key:"Tax Rate"}],
+    question:"For the ₹15 crore gap, which financing suits Vidyalaya best?", answer:"debt",
+    explanation:"Vidyalaya is profitable and can easily service interest. Promoters want full control, ruling out equity. At 30% tax rate, interest payments are tax-deductible — a meaningful tax shield. The ₹15Cr need is small and manageable. Classic founder behaviour: retain equity, use cheap debt.",
+    concepts:["Tax Shield","Control Retention","Cost of Debt","Retained Earnings + Debt Mix"] },
+  { company:"FutureFlight Aviation Ltd.", type:"Capital-Intensive — Distressed Sector",
+    text:"FutureFlight's revenue crashed 70% due to a pandemic. They need ₹800 crore to survive and resume operations but already owe ₹2000 crore. Multiple aircraft are grounded. The government has offered a partial equity bailout.",
+    stats:[{val:"-70%",key:"Revenue Drop"},{val:"₹2000Cr",key:"Existing Debt"},{val:"₹800Cr",key:"Survival Capital"},{val:"Distressed",key:"Financial Status"}],
+    question:"In this distress situation, what should FutureFlight accept?", answer:"equity",
+    explanation:"With ₹2000Cr of existing debt and a 70% revenue crash, FutureFlight is in severe financial distress. More debt is impossible — they can't pay current interest, let alone new debt. Equity injection (even a government bailout) is the only viable option. Survival takes priority over ownership dilution.",
+    concepts:["Financial Distress","Debt Restructuring","Bailout","Survival Financing"] }
+];
+
+let currentIdx=0, score=0, lives=3, streak=0, answered=false, history=[];
+
+function startGame() {
+  const inp = document.getElementById('player-name-input');
+  const err = document.getElementById('name-error');
+  const name = inp.value.trim();
+  if (!name) { err.style.display='block'; inp.focus(); return; }
+  err.style.display='none';
+  playerName = name;
+  currentIdx=0; score=0; lives=3; streak=0; answered=false; history=[];
+  updateScore(); updateLives();
+  showScreen('game-screen');
+  loadQuestion();
+}
+
+function restartGame() {
+  currentIdx=0; score=0; lives=3; streak=0; answered=false; history=[];
+  updateScore(); updateLives();
+  showScreen('game-screen');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const s = scenarios[currentIdx];
+  answered = false;
+  document.getElementById('round-badge').textContent = `Round ${currentIdx+1} of ${scenarios.length}`;
+  document.getElementById('progress-fill').style.width = ((currentIdx/scenarios.length)*100)+'%';
+  document.getElementById('company-name').textContent = s.company;
+  document.getElementById('scenario-type').textContent = s.type;
+  document.getElementById('scenario-text').textContent = s.text;
+  document.getElementById('question-text').textContent = s.question;
+  document.getElementById('stats-row').innerHTML = s.stats.map(st=>
+    `<div class="stat-box"><div class="stat-val">${st.val}</div><div class="stat-key">${st.key}</div></div>`).join('');
+  const fb = document.getElementById('feedback-box');
+  fb.style.display='none'; fb.className='feedback-box';
+  document.getElementById('next-btn').style.display='none';
+  const bD=document.getElementById('btn-debt'), bE=document.getElementById('btn-equity');
+  bD.disabled=false; bE.disabled=false;
+  bD.className='choice-btn debt-btn'; bE.className='choice-btn equity-btn';
+  updateStreak();
+}
+
+function choose(choice) {
+  if (answered) return;
+  answered = true;
+  const s = scenarios[currentIdx];
+  const correct = choice===s.answer;
+  const bD=document.getElementById('btn-debt'), bE=document.getElementById('btn-equity');
+  bD.disabled=true; bE.disabled=true;
+  const chosen=choice==='debt'?bD:bE, other=choice==='debt'?bE:bD;
+  if (correct) {
+    chosen.className='choice-btn '+(choice==='debt'?'debt-btn':'equity-btn')+' correct';
+    score += 10 + (streak>=2 ? 5 : 0); streak++;
+    history.push({q:s.company,ok:true}); showFeedback(true,s);
+  } else {
+    chosen.className='choice-btn '+(choice==='debt'?'debt-btn':'equity-btn')+' wrong';
+    other.className='choice-btn '+(s.answer==='debt'?'debt-btn':'equity-btn')+' reveal-correct';
+    lives--; streak=0; history.push({q:s.company,ok:false}); showFeedback(false,s); updateLives();
+  }
+  updateScore(); updateStreak();
+  const nb=document.getElementById('next-btn');
+  nb.style.display='block';
+  nb.textContent = lives<=0 ? 'SEE RESULTS →' : 'NEXT SCENARIO →';
+}
+
+function showFeedback(ok, s) {
+  const fb=document.getElementById('feedback-box');
+  fb.style.display='block'; fb.className='feedback-box '+(ok?'correct':'wrong');
+  document.getElementById('feedback-verdict').textContent = ok ? '✓ CORRECT ANALYSIS' : '✗ INCORRECT CALL';
+  document.getElementById('feedback-explain').textContent = s.explanation;
+  document.getElementById('concept-tags').innerHTML = s.concepts.map(c=>`<span class="concept-tag">${c}</span>`).join('');
+}
+
+function nextQuestion() {
+  if (lives<=0) { finishGame(); return; }
+  currentIdx++;
+  if (currentIdx>=scenarios.length) { finishGame(); return; }
+  loadQuestion();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateScore() { document.getElementById('score-val').textContent=score; }
+function updateLives() { document.getElementById('lives-val').textContent=['♥ ♥ ♥','♥ ♥','♥','✗'][3-lives]||'✗'; }
+function updateStreak() { document.getElementById('streak-badge').textContent=streak>=2?`🔥 ${streak} streak (+5 bonus)`:''; }
+
+function finishGame() {
+  const total=history.length, correct=history.filter(h=>h.ok).length;
+  const pct = total ? Math.round((correct/total)*100) : 0;
+  let grade,title,gc;
+  if(pct>=90){grade='A+';title='CFO Material';gc='#4CAF7D';}
+  else if(pct>=75){grade='A';title='Sharp Analyst';gc='#5B8EF0';}
+  else if(pct>=60){grade='B';title='Good Instincts';gc='#E8B84B';}
+  else if(pct>=40){grade='C';title='Needs Revision';gc='#E8B84B';}
+  else{grade='D';title='Back to Textbook';gc='#E05656';}
+
+  // Save — best score per name
+  const entry = { name:playerName, score, correct, total, grade, pct, ts:Date.now(), _latest:true };
+  let lb = loadLB().map(e=>({...e,_latest:false}));
+  const idx = lb.findIndex(e=>e.name.toLowerCase()===playerName.toLowerCase());
+  if (idx>=0) { if(score>lb[idx].score) lb[idx]=entry; else lb[idx]._latest=true; }
+  else lb.push(entry);
+  saveLB(lb);
+
+  // Rank
+  const sorted = lb.slice().sort((a,b)=>b.score-a.score);
+  const rankPos = sorted.findIndex(e=>e.name.toLowerCase()===playerName.toLowerCase())+1;
+
+  const gradeEl=document.getElementById('result-grade');
+  gradeEl.textContent=grade; gradeEl.style.color=gc;
+  document.getElementById('result-title').textContent=title;
+  document.getElementById('result-score-big').textContent=score+' pts';
+  document.getElementById('result-subtitle').textContent=`${correct} correct out of ${total} · ${pct}% accuracy`;
+
+  const m=medal(rankPos);
+  document.getElementById('result-rank-banner').innerHTML=`
+    <div class="rank-medal-big">${m||'📊'}</div>
+    <div>
+      <div class="rank-pos">Rank #${rankPos} on Leaderboard</div>
+      <div class="rank-sub">${lb.length} players total · ${m?'Podium finish! 🎉':'Keep practicing!'}</div>
+    </div>`;
+
+  document.getElementById('result-breakdown').innerHTML=
+    `<div class="breakdown-title">Scenario-by-scenario breakdown</div>`+
+    history.map((h,i)=>`<div class="breakdown-row">
+      <span class="breakdown-q">${scenarios[i].company}</span>
+      <span class="breakdown-a ${h.ok?'ok':'bad'}">${h.ok?'✓ CORRECT':'✗ WRONG — '+scenarios[i].answer.toUpperCase()}</span>
+    </div>`).join('');
+
+  showScreen('result-screen');
+}
+
+// ── INIT ──
+renderPreview();
+showScreen('name-screen');
+</script>
+</body>
+</html>
